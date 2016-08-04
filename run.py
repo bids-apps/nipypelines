@@ -967,6 +967,9 @@ Creates the full workflow including getting information from dicom files
 
 def create_resting_workflow(args, workdir, name=None):
 
+    if not os.path.exists(args.fsdir):
+        raise ValueError('FreeSurfer directory has to exist')
+
     # remap freesurfer directory to a working directory
     if not os.path.exists(workdir):
         os.makedirs(workdir)
@@ -1000,8 +1003,11 @@ def create_resting_workflow(args, workdir, name=None):
     for subject_label in subjects_to_analyze:
         # create a link to the subject
         subject_link = os.path.join(new_subjects_dir, subject_label)
+        orig_dir = os.path.join(os.path.abspath(args.fsdir), subject_label)
+        if not os.path.exists(orig_dir):
+            continue
         if not os.path.islink(subject_link):
-            os.symlink(os.path.join(os.path.abspath(args.fsdir), subject_label),
+            os.symlink(orig_dir,
                        subject_link)
         print(bids_dir, subject_label)
         TR, slice_times, slice_thickness, files = get_info(bids_dir, subject_label)
@@ -1051,7 +1057,7 @@ if __name__ == "__main__":
                               "template - "
                               "OASIS-30_Atropos_template_in_MNI152_2mm.nii.gz"),
                         required=True)
-    parser.add_argument("--subjects_dir", dest="fsdir", required=True,
+    parser.add_argument("--subjects_dir", dest="fsdir",
                         help="FreeSurfer subject directory")
     parser.add_argument("--target_surfaces", dest="target_surfs", nargs="+",
                         default=['fsaverage5'],
@@ -1067,7 +1073,7 @@ if __name__ == "__main__":
                         default=0.01, type=float,
                         help="High pass frequency (Hz)" + defstr)
     parser.add_argument("-w", "--work_dir", dest="work_dir",
-                        help="Output directory base")
+                        help="Work directory")
     parser.add_argument("-p", "--plugin", dest="plugin",
                         default='Linear',
                         help="Plugin to use")
@@ -1079,6 +1085,10 @@ if __name__ == "__main__":
         work_dir = os.path.abspath(args.work_dir)
     else:
         work_dir = os.getcwd()
+    if args.fsdir is None:
+        args.fsdir = os.path.abspath(os.path.join(args.bids_dir, 'derivatives', 'freesurfer'))
+    print(args.fsdir)
+
     wf = create_resting_workflow(args, work_dir)
 
     wf.base_dir = work_dir
