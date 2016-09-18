@@ -590,18 +590,11 @@ def create_workflow(files,
 
     wf = Workflow(name=name)
 
-    # Rename files in case they are named identically
-    name_unique = MapNode(Rename(format_string='rest_%(run)02d'),
-                          iterfield=['in_file', 'run'],
-                          name='rename')
-    name_unique.inputs.keep_ext = True
-    name_unique.inputs.run = range(1, len(files) + 1)
-    name_unique.inputs.in_file = files
-
     realign = Node(nipy.SpaceTimeRealigner(), name="spacetime_realign")
     realign.inputs.slice_times = slice_times
     realign.inputs.tr = TR
     realign.inputs.slice_info = 2
+    realign.inputs.in_file = files
     realign.plugin_args = {'sbatch_args': '-c%d' % 4}
 
 
@@ -652,8 +645,7 @@ def create_workflow(files,
     voxel sizes.
     """
 
-    wf.connect([(name_unique, realign, [('out_file', 'in_file')]),
-                (realign, art, [('out_file', 'realigned_files')]),
+    wf.connect([(realign, art, [('out_file', 'realigned_files')]),
                 (realign, art, [('par_file', 'realignment_parameters')]),
                 ])
 
