@@ -1,10 +1,9 @@
 ## Dataflows for the masses
 
 ### Description
-This app allows running different common workflows on a BIDs dataset
+This app allows preprocessing functional tasks in a BIDs dataset
 
-Current dataflows:
-- Resting state preprocessing, requires freesurfer to have been run on a participant
+Current dataflow requires freesurfer to have been run on a participant
 
 ### Documentation
 Provide a link to a documention of your pipeline.
@@ -48,23 +47,35 @@ This App has the following comman line arguments:
 To run it in participant level mode (for one participant):
 
     docker run -i --rm \
-		-v /Users/filo/data/ds005:/bids_dataset \
-		-v /Users/filo/outputs:/outputs \
+		-v /path/to/ds005:/bids_dataset \
+		-v /path/to/outputs:/outputs \
+		-v /path/to/scratch:/scratch \
 		bids/example \
 		/bids_dataset /outputs participant --participant_label 01
 
-After doing this for all subjects (potentially in parallel) the group level analysis
-can be run:
 
-    docker run -i --rm \
-		-v /Users/filo/data/ds005:/bids_dataset \
-		-v /Users/filo/outputs:/outputs \
-		bids/example \
-		/bids_dataset /outputs group
+# The necessary files for running the app is generated using the following snippet of code after running `reprozip trace`.
 
-### Special considerations
-Describe if your app has some special requirements. For example:
+```
+from yaml import read
+import yaml as yl
+import os
+import json
 
-- Multiple map reduce steps (participant, group, participant2, group2 etc.)
-- Unusual memory requirements
-- etc.
+with open('config.yml', 'rt') as fp:
+    data = yl.load(fp)
+
+paths1 = [val['path'] for val in data['inputs_outputs'] if all([key not in val['path'] for key in ('bids_dataset', 'scratch', 'outputs', '/run')])]
+paths2 = [val for val in data['other_files'] if ('fsl' in val or 'opt' in val ) and ('miniconda' not in val and 'bids_dataset' not in val)]
+
+paths = [val for val in paths1 if val not in paths2] + paths2
+files = [val for val in paths if not os.path.isdir(val)]
+
+os.system('tar zcf files.tgz %s' % ' '.join(files))
+
+rel_env = dict([(k, v) for k, v in data['runs'][0]['environ'].items() if any([key in k.lower() or key in v.lower() for key in ('fsl', 'freesurfer')])])
+info = dict(files=files, environ=rel_env)
+
+with open('appinfo.json', 'wt') as fp:
+    json.dump(info, fp, indent=2)
+```

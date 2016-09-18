@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 """
 ====================================
@@ -45,13 +44,13 @@ specifically the 2mm versions of:
 
 """
 
+#import matplotlib
+#matplotlib.use('Agg')
+
 import os
 
 from nipype.interfaces.base import CommandLine
 CommandLine.set_default_terminal_output('allatonce')
-
-from dcmstack.extract import default_extractor
-from dicom import read_file
 
 from nipype.interfaces import (fsl, Function, ants, freesurfer,nipy)
 from nipype.interfaces.c3 import C3dAffineTool
@@ -80,7 +79,7 @@ imports = ['import os',
            ]
 
 
-def get_info(bids_dir, subject_id):
+def get_info(bids_dir, subject_id, task_name):
     """Given a BIDS dataset and subject id
 
     Returns
@@ -90,17 +89,16 @@ def get_info(bids_dir, subject_id):
     Spacing between slices
     Files
     """
-    from glob import glob
-    import os
-    import json
-    files = sorted(glob(os.path.join(bids_dir, subject_id, 'func', '{}_task-rest_bold.nii.gz'.format(subject_id))))
-    json_files = sorted(glob(os.path.join(bids_dir, subject_id, 'func', '{}_task-rest_bold.json'.format(subject_id))))
-    with open(json_files[0], 'rt') as fp:
-        meta = json.load(fp)
+    from bids.grabbids import BIDSLayout
+    layout = layout = BIDSLayout(bids_dir)
+    files = [f.filename for f in layout.get(subject=subject_id.replace('sub-', ''),
+                                            type='bold',
+                                            task=task_name,
+                                            extensions=["nii.gz", "nii"])]
+    metadata = layout.get_metadata(files[0])
     import nibabel as nb
     slice_thickness = nb.load(files[0]).get_header().get_zooms()[-1]
-    files = [os.path.abspath(val) for val in files]
-    return (meta['RepetitionTime'], meta['SliceTiming'], slice_thickness, files)
+    return (metadata['RepetitionTime'], metadata['SliceTiming'], slice_thickness, files)
 
 
 def median(in_files):
@@ -647,7 +645,7 @@ def create_workflow(files,
     art.inputs.zintensity_threshold = 9
     art.inputs.mask_type = 'spm_global'
     art.inputs.parameter_source = 'NiPy'
-
+    art.inputs.save_plot = False #dbg temporary while matplotlib is not available
 
     """Here we are connecting all the nodes together. Notice that we add the merge node only if you choose
     to use 4D. Also `get_vox_dims` function is passed along the input volume of normalise to set the optimal
@@ -916,47 +914,47 @@ def create_workflow(files,
     # Save the relevant data into an output directory
     datasink = Node(interface=DataSink(), name="datasink")
     datasink.inputs.base_directory = sink_directory
-    datasink.inputs.container = subject_id
+    #datasink.inputs.container = subject_id
     datasink.inputs.substitutions = substitutions
     datasink.inputs.regexp_substitutions = regex_subs #(r'(/_.*(\d+/))', r'/run\2')
-    wf.connect(realign, 'par_file', datasink, 'resting.qa.motion')
-    wf.connect(art, 'norm_files', datasink, 'resting.qa.art.@norm')
-    wf.connect(art, 'intensity_files', datasink, 'resting.qa.art.@intensity')
-    wf.connect(art, 'outlier_files', datasink, 'resting.qa.art.@outlier_files')
-    wf.connect(registration, 'outputspec.segmentation_files', datasink, 'resting.mask_files')
-    wf.connect(registration, 'outputspec.anat2target', datasink, 'resting.qa.ants')
-    wf.connect(mask, 'mask_file', datasink, 'resting.mask_files.@brainmask')
-    wf.connect(mask_target, 'out_file', datasink, 'resting.mask_files.target')
-    wf.connect(filter1, 'out_f', datasink, 'resting.qa.compmaps.@mc_F')
-    wf.connect(filter1, 'out_pf', datasink, 'resting.qa.compmaps.@mc_pF')
-    wf.connect(filter2, 'out_f', datasink, 'resting.qa.compmaps')
-    wf.connect(filter2, 'out_pf', datasink, 'resting.qa.compmaps.@p')
-    wf.connect(registration, 'outputspec.min_cost_file', datasink, 'resting.qa.mincost')
-    wf.connect(tsnr, 'tsnr_file', datasink, 'resting.qa.tsnr.@map')
-    wf.connect([(get_roi_tsnr, datasink, [('avgwf_txt_file', 'resting.qa.tsnr'),
-                                          ('summary_file', 'resting.qa.tsnr.@summary')])])
+    wf.connect(realign, 'par_file', datasink, 'qa.motion')
+    wf.connect(art, 'norm_files', datasink, 'qa.art.@norm')
+    wf.connect(art, 'intensity_files', datasink, 'qa.art.@intensity')
+    wf.connect(art, 'outlier_files', datasink, 'qa.art.@outlier_files')
+    wf.connect(registration, 'outputspec.segmentation_files', datasink, 'mask_files')
+    wf.connect(registration, 'outputspec.anat2target', datasink, 'qa.ants')
+    wf.connect(mask, 'mask_file', datasink, 'mask_files.@brainmask')
+    wf.connect(mask_target, 'out_file', datasink, 'mask_files.target')
+    wf.connect(filter1, 'out_f', datasink, 'qa.compmaps.@mc_F')
+    wf.connect(filter1, 'out_pf', datasink, 'qa.compmaps.@mc_pF')
+    wf.connect(filter2, 'out_f', datasink, 'qa.compmaps')
+    wf.connect(filter2, 'out_pf', datasink, 'qa.compmaps.@p')
+    wf.connect(registration, 'outputspec.min_cost_file', datasink, 'qa.mincost')
+    wf.connect(tsnr, 'tsnr_file', datasink, 'qa.tsnr.@map')
+    wf.connect([(get_roi_tsnr, datasink, [('avgwf_txt_file', 'qa.tsnr'),
+                                          ('summary_file', 'qa.tsnr.@summary')])])
 
-    wf.connect(bandpass, 'out_files', datasink, 'resting.timeseries.@bandpassed')
-    wf.connect(smooth, 'out_file', datasink, 'resting.timeseries.@smoothed')
+    wf.connect(bandpass, 'out_files', datasink, 'timeseries.@bandpassed')
+    wf.connect(smooth, 'out_file', datasink, 'timeseries.@smoothed')
     wf.connect(createfilter1, 'out_files',
-               datasink, 'resting.regress.@regressors')
+               datasink, 'regress.@regressors')
     wf.connect(createfilter2, 'out_files',
-               datasink, 'resting.regress.@compcorr')
-    wf.connect(maskts, 'out_file', datasink, 'resting.timeseries.target')
+               datasink, 'regress.@compcorr')
+    wf.connect(maskts, 'out_file', datasink, 'timeseries.target')
     wf.connect(sampleaparc, 'summary_file',
-               datasink, 'resting.parcellations.aparc')
+               datasink, 'parcellations.aparc')
     wf.connect(sampleaparc, 'avgwf_txt_file',
-               datasink, 'resting.parcellations.aparc.@avgwf')
+               datasink, 'parcellations.aparc.@avgwf')
     wf.connect(ts2txt, 'out_file',
-               datasink, 'resting.parcellations.grayo.@subcortical')
+               datasink, 'parcellations.grayo.@subcortical')
 
     datasink2 = Node(interface=DataSink(), name="datasink2")
     datasink2.inputs.base_directory = sink_directory
-    datasink2.inputs.container = subject_id
+    #datasink2.inputs.container = subject_id
     datasink2.inputs.substitutions = substitutions
     datasink2.inputs.regexp_substitutions = regex_subs #(r'(/_.*(\d+/))', r'/run\2')
     wf.connect(combiner, 'out_file',
-               datasink2, 'resting.parcellations.grayo.@surface')
+               datasink2, 'parcellations.grayo.@surface')
     return wf
 
 
@@ -965,8 +963,7 @@ Creates the full workflow including getting information from dicom files
 """
 
 
-def create_resting_workflow(args, workdir, name=None):
-
+def create_resting_workflow(args, workdir, outdir):
     if not os.path.exists(args.fsdir):
         raise ValueError('FreeSurfer directory has to exist')
 
@@ -1010,25 +1007,28 @@ def create_resting_workflow(args, workdir, name=None):
             os.symlink(orig_dir,
                        subject_link)
         print(bids_dir, subject_label)
-        TR, slice_times, slice_thickness, files = get_info(bids_dir, subject_label)
-        if name is None:
-            name = 'resting_' + subject_label
-        kwargs = dict(files=files,
-                      target_file=os.path.abspath(args.target_file),
-                      subject_id=subject_label,
-                      TR=TR,
-                      slice_times=slice_times,
-                      vol_fwhm=args.vol_fwhm,
-                      surf_fwhm=args.surf_fwhm,
-                      norm_threshold=2.,
-                      subjects_dir=new_subjects_dir,
-                      target_subject=args.target_surfs,
-                      lowpass_freq=args.lowpass_freq,
-                      highpass_freq=args.highpass_freq,
-                      sink_directory=os.path.abspath(args.output_dir),
-                      name=name)
-        wf = create_workflow(**kwargs)
-        meta_wf.add_nodes([wf])
+        from bids.grabbids import BIDSLayout
+        layout = layout = BIDSLayout(bids_dir)
+        for task in layout.get_tasks():
+            TR, slice_times, slice_thickness, files = get_info(bids_dir, subject_label, task)
+            print(TR, slice_times, slice_thickness, files)
+            name = 'resting_{sub}_{task}'.format(sub=subject_label, task=task)
+            kwargs = dict(files=files,
+                          target_file=os.path.abspath(args.target_file),
+                          subject_id=subject_label,
+                          TR=TR,
+                          slice_times=slice_times,
+                          vol_fwhm=args.vol_fwhm,
+                          surf_fwhm=args.surf_fwhm,
+                          norm_threshold=2.,
+                          subjects_dir=new_subjects_dir,
+                          target_subject=args.target_surfs,
+                          lowpass_freq=args.lowpass_freq,
+                          highpass_freq=args.highpass_freq,
+                          sink_directory=os.path.abspath(os.path.join(out_dir, subject_label, task)),
+                          name=name)
+            wf = create_workflow(**kwargs)
+            meta_wf.add_nodes([wf])
     return meta_wf
 
 if __name__ == "__main__":
@@ -1053,10 +1053,10 @@ if __name__ == "__main__":
                         'participants can be specified with a space separated list.',
                         nargs="+")
     parser.add_argument("-t", "--target", dest="target_file",
+                        default=os.path.abspath('OASIS-30_Atropos_template_in_MNI152_2mm.nii.gz'),
                         help=("Target in MNI space. Best to use the MindBoggle "
                               "template - "
-                              "OASIS-30_Atropos_template_in_MNI152_2mm.nii.gz"),
-                        required=True)
+                              "OASIS-30_Atropos_template_in_MNI152_2mm.nii.gz"))
     parser.add_argument("--subjects_dir", dest="fsdir",
                         help="FreeSurfer subject directory")
     parser.add_argument("--target_surfaces", dest="target_surfs", nargs="+",
@@ -1068,10 +1068,10 @@ if __name__ == "__main__":
                         type=float, help="Spatial FWHM" + defstr)
     parser.add_argument("-l", "--lowpass_freq", dest="lowpass_freq",
                         default=0.1, type=float,
-                        help="Low pass frequency (Hz)" + defstr)
+                        help="Cutoff frequency for low pass filter (Hz)" + defstr)
     parser.add_argument("-u", "--highpass_freq", dest="highpass_freq",
                         default=0.01, type=float,
-                        help="High pass frequency (Hz)" + defstr)
+                        help="Cutoff frequency for high pass filter (Hz)" + defstr)
     parser.add_argument("-w", "--work_dir", dest="work_dir",
                         help="Work directory")
     parser.add_argument("-p", "--plugin", dest="plugin",
@@ -1089,8 +1089,12 @@ if __name__ == "__main__":
         args.fsdir = os.path.abspath(os.path.join(args.bids_dir, 'derivatives', 'freesurfer'))
     print(args.fsdir)
 
-    wf = create_resting_workflow(args, work_dir)
+    if args.output_dir:
+        out_dir = os.path.abspath(args.output_dir)
+    else:
+        out_dir = '/bids_dataset/derivatives/nipypelines'
 
+    wf = create_resting_workflow(args, work_dir, out_dir)
     wf.base_dir = work_dir
     if args.plugin_args:
         wf.run(args.plugin, plugin_args=eval(args.plugin_args))
