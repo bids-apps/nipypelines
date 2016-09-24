@@ -30,6 +30,7 @@ Please use the following zenodo citation when using this App.
 ### Usage
 This App has the following command line arguments:
 
+```
 usage: run.py [-h]
               [--participant_label PARTICIPANT_LABEL [PARTICIPANT_LABEL ...]]
               [-t TARGET_FILE] [--subjects_dir FSDIR]
@@ -41,15 +42,22 @@ usage: run.py [-h]
 
 positional arguments:
   bids_dir              The directory with the input dataset formatted according to the BIDS standard.
-  output_dir            The directory where the output files should be stored. If you are running group level analysis this folder should be prepopulated with the results of theparticipant level analysis.
-  {participant}         Level of the analysis that will be performed. Multiple participant level analyses can be run independently (in parallel) using the same output_dir.
+  output_dir            The directory where the output files should be stored. If you are running 
+                        group level analysis this folder should be prepopulated with the results of 
+			the participant level analysis.
+  {participant}         Level of the analysis that will be performed. Multiple participant level 
+  			analyses can be run independently (in parallel) using the same output_dir.
 
 optional arguments:
   -h, --help            show this help message and exit
   --participant_label PARTICIPANT_LABEL [PARTICIPANT_LABEL ...]
-                        The label(s) of the participant(s) that should be analyzed. The label corresponds to sub-<participant_label> from the BIDS spec (so it does not include "sub-"). If this parameter is not provided all subjects should be analyzed. Multiple participants can be specified with a space separated list.
+                        The label(s) of the participant(s) that should be analyzed. The label 
+			corresponds to sub-<participant_label> from the BIDS spec (so it does not 
+			include "sub-"). If this parameter is not provided all subjects should be 
+			analyzed. Multiple participants can be specified with a space separated list.
   -t TARGET_FILE, --target TARGET_FILE
-                        Target in MNI space. Best to use the MindBoggle template - OASIS-30_Atropos_template_in_MNI152_2mm.nii.gz
+                        Target in MNI space. Best to use the MindBoggle template - 
+			OASIS-30_Atropos_template_in_MNI152_2mm.nii.gz
   --subjects_dir FSDIR  FreeSurfer subject directory
   --target_surfaces TARGET_SURFS [TARGET_SURFS ...]
                         FreeSurfer target surfaces (default ['fsaverage5'])
@@ -66,14 +74,17 @@ optional arguments:
                         Plugin to use
   --plugin_args PLUGIN_ARGS
                         Plugin arguments
+```
 
 To run it in participant level mode (for one participant):
 
+```
     docker run -i --rm \
 		-v /path/to/ds005:/bids_dataset \
 		-v /path/to/outputs:/outputs \
 		bids/nipypelines \
 		/bids_dataset /outputs participant --participant_label 01
+```
 
 ### Commercial use
 
