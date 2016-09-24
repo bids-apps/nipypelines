@@ -1,39 +1,14 @@
 #!/usr/bin/env python
 """
-====================================
-rsfMRI: ANTS, FS, FSL, NiPy, aCompCor
-====================================
+===================================
+fMRI: ANTS, FS, FSL, NiPy, aCompCor
+===================================
 
+A preprocessing workflow for functional timeseries data.
 
-A preprocessing workflow for Siemens resting state data.
+This workflow makes use of ANTS, FreeSurfer, FSL, NiPy, and CompCor.
 
-This workflow makes use of:
-
-- ANTS
-- FreeSurfer
-- FSL
-- NiPy
-- CompCor
-
-For example::
-
-  python rsfmri_preprocessing.py -d /data/12345-34-1.dcm -f /data/Resting.nii
-      -s subj001 -o output -p PBS --plugin_args "dict(qsub_args='-q many')"
-
-  or
-
-  python rsfmri_vol_surface_preprocessing.py -f SUB_1024011/E?/func/rest.nii
-      -t OASIS-30_Atropos_template_in_MNI152_2mm.nii.gz --TR 2 -s SUB_1024011
-      --subjects_dir fsdata --slice_times 0 17 1 18 2 19 3 20 4 21 5 22 6 23
-      7 24 8 25 9 26 10 27 11 28 12 29 13 30 14 31 15 32 16 -o .
-
-This workflow takes resting timeseries and a Siemens dicom file corresponding
-to it and preprocesses it to produce timeseries coordinates or grayordinates.
-
-For non-Siemens dicoms, provide slice times instead, since the dicom extractor is not guaranteed to work.
-
-This workflow also requires 2mm subcortical atlas and templates that are
-available from:
+This workflow includes 2mm subcortical atlas and templates that are available from:
 
 http://mindboggle.info/data.html
 
@@ -998,12 +973,10 @@ def create_resting_workflow(args, workdir, outdir):
         if not os.path.islink(subject_link):
             os.symlink(orig_dir,
                        subject_link)
-        print(bids_dir, subject_label)
         from bids.grabbids import BIDSLayout
         layout = layout = BIDSLayout(bids_dir)
         for task in layout.get_tasks():
             TR, slice_times, slice_thickness, files = get_info(bids_dir, subject_label, task)
-            print(TR, slice_times, slice_thickness, files)
             name = 'resting_{sub}_{task}'.format(sub=subject_label, task=task)
             kwargs = dict(files=files,
                           target_file=os.path.abspath(args.target_file),
@@ -1073,18 +1046,14 @@ if __name__ == "__main__":
                         help="Plugin arguments")
     args = parser.parse_args()
 
+    if args.fsdir is None:
+        args.fsdir = os.path.abspath(os.path.join(args.bids_dir, 'derivatives', 'freesurfer'))
+
+    out_dir = os.path.abspath(args.output_dir)
     if args.work_dir:
         work_dir = os.path.abspath(args.work_dir)
     else:
-        work_dir = os.getcwd()
-    if args.fsdir is None:
-        args.fsdir = os.path.abspath(os.path.join(args.bids_dir, 'derivatives', 'freesurfer'))
-    print(args.fsdir)
-
-    if args.output_dir:
-        out_dir = os.path.abspath(args.output_dir)
-    else:
-        out_dir = '/bids_dataset/derivatives/nipypelines'
+        work_dir = os.path.join(out_dir, 'scratch')
 
     wf = create_resting_workflow(args, work_dir, out_dir)
     wf.base_dir = work_dir
