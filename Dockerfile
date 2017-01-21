@@ -7,7 +7,7 @@ RUN apt-get update \
 # RUN apt-key adv --recv-keys --keyserver hkp://pgp.mit.edu:80 0xA5D32F012649A5A9
 
 RUN cd / && curl -L https://dl.dropbox.com/s/w2x3g9g89xqiq82/resting_progs.tgz | tar zx
-RUN curl -O http://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh && bash Miniconda2-latest-Linux-x86_64.sh -b && /root/miniconda2/bin/conda update -yq conda && /root/miniconda2/bin/conda install -y -c conda-forge nipype && /root/miniconda2/bin/pip install https://github.com/nipy/nipy/archive/5bc0712e2e5fe8f2069db3ed6fbbe2f2a89eb987.zip https://github.com/INCF/pybids/archive/83ddc7ed0a56adee06a8b59ae0e9cb8a22baf1ef.zip && /root/miniconda2/bin/conda clean -y --all
+RUN curl -sSLO http://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh && bash Miniconda2-latest-Linux-x86_64.sh -b && /root/miniconda2/bin/conda update -yq conda && /root/miniconda2/bin/conda install -y -c conda-forge nipype && /root/miniconda2/bin/pip install https://github.com/nipy/nipy/archive/5bc0712e2e5fe8f2069db3ed6fbbe2f2a89eb987.zip https://github.com/INCF/pybids/archive/83ddc7ed0a56adee06a8b59ae0e9cb8a22baf1ef.zip && /root/miniconda2/bin/conda clean -y --all
 
 ENV FSLDIR /usr/share/fsl/5.0
 # ENV POSSUMDIR /usr/share/fsl/5.0
