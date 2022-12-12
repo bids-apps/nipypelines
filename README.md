@@ -13,8 +13,13 @@ http://mindboggle.info/data.html
 
 specifically the 2mm versions of:
 
-- `Joint Fusion Atlas <http://mindboggle.info/data/atlases/jointfusion/OASIS-TRT-20_jointfusion_DKT31_CMA_labels_in_MNI152_2mm_v2.nii.gz>`_
-- `MNI template <http://mindboggle.info/data/templates/ants/OASIS-30_Atropos_template_in_MNI152_2mm.nii.gz>`_
+- Joint Fusion Atlas:
+
+  http://mindboggle.info/data/atlases/jointfusion/OASIS-TRT-20_jointfusion_DKT31_CMA_labels_in_MNI152_2mm_v2.nii.gz
+  
+- MNI template: 
+
+  http://mindboggle.info/data/templates/ants/OASIS-30_Atropos_template_in_MNI152_2mm.nii.gz
 
 Requirements:
 Current dataflow requires freesurfer to have been run on a participant and stored in /bids_dataset/derivatives/freesurfer.
@@ -105,7 +110,7 @@ out using (reprozip)[https://vida-nyu.github.io/reprozip/] inside a docker conta
 This generates a `config.yml` containing all the necessary files used in running the software. The necessary 
 files for running the app is generated using the following snippet of code after running `reprozip trace`.
 
-```
+```python
 from yaml import read
 import yaml as yl
 import os
