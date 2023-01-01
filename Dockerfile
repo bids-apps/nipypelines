@@ -1,7 +1,7 @@
 FROM philcryer/min-jessie
 
-RUN apt-get update \
-    && apt-get install -y curl bzip2 libgomp1 libnewmat10ldbl libnifti2 gcc tcsh
+RUN apt-get update -qq \
+    && apt-get install -q -y --force-yes curl bzip2 libgomp1 libnewmat10ldbl libnifti2 gcc tcsh
 
 # RUN wget -O /etc/apt/sources.list.d/neurodebian.sources.list http://neuro.debian.net/lists/xenial.us-ca.full
 # RUN apt-key adv --recv-keys --keyserver hkp://pgp.mit.edu:80 0xA5D32F012649A5A9
