@@ -26,7 +26,7 @@ ENV FSLOUTPUTTYPE NIFTI_GZ
 ENV SUBJECTS_DIR /opt2/freesurfer/subjects
 # ENV MINC_LIB_DIR /opt2/freesurfer/mni/lib
 # ENV PERL5LIB /opt2/freesurfer/mni/lib/perl5/5.8.5
-# ENV FSLMACHINELIST 
+# ENV FSLMACHINELIST
 ENV FSLMULTIFILEQUIT TRUE
 # ENV FSLTCLSH /usr/bin/tclsh
 # ENV MNI_DATAPATH /opt2/freesurfer/mni/data
@@ -43,4 +43,3 @@ WORKDIR /code
 RUN chmod +x run.py
 
 ENTRYPOINT ["./run.py"]
-

@@ -16,14 +16,14 @@ specifically the 2mm versions of:
 - Joint Fusion Atlas:
 
   http://mindboggle.info/data/atlases/jointfusion/OASIS-TRT-20_jointfusion_DKT31_CMA_labels_in_MNI152_2mm_v2.nii.gz
-  
-- MNI template: 
+
+- MNI template:
 
   http://mindboggle.info/data/templates/ants/OASIS-30_Atropos_template_in_MNI152_2mm.nii.gz
 
 Requirements:
 Current dataflow requires freesurfer to have been run on a participant and stored in /bids_dataset/derivatives/freesurfer.
-The docker container allows you to mount your own freesurfer directory and provide the path to it using the `--subjects_dir` 
+The docker container allows you to mount your own freesurfer directory and provide the path to it using the `--subjects_dir`
 flag.
 
 ### How to report errors
@@ -47,21 +47,21 @@ usage: run.py [-h]
 
 positional arguments:
   bids_dir              The directory with the input dataset formatted according to the BIDS standard.
-  output_dir            The directory where the output files should be stored. If you are running 
-                        group level analysis this folder should be prepopulated with the results of 
+  output_dir            The directory where the output files should be stored. If you are running
+                        group level analysis this folder should be prepopulated with the results of
 			the participant level analysis.
-  {participant}         Level of the analysis that will be performed. Multiple participant level 
+  {participant}         Level of the analysis that will be performed. Multiple participant level
   			analyses can be run independently (in parallel) using the same output_dir.
 
 optional arguments:
   -h, --help            show this help message and exit
   --participant_label PARTICIPANT_LABEL [PARTICIPANT_LABEL ...]
-                        The label(s) of the participant(s) that should be analyzed. The label 
-			corresponds to sub-<participant_label> from the BIDS spec (so it does not 
-			include "sub-"). If this parameter is not provided all subjects should be 
+                        The label(s) of the participant(s) that should be analyzed. The label
+			corresponds to sub-<participant_label> from the BIDS spec (so it does not
+			include "sub-"). If this parameter is not provided all subjects should be
 			analyzed. Multiple participants can be specified with a space separated list.
   -t TARGET_FILE, --target TARGET_FILE
-                        Target in MNI space. Best to use the MindBoggle template - 
+                        Target in MNI space. Best to use the MindBoggle template -
 			OASIS-30_Atropos_template_in_MNI152_2mm.nii.gz
   --subjects_dir FSDIR  FreeSurfer subject directory
   --target_surfaces TARGET_SURFS [TARGET_SURFS ...]
@@ -102,12 +102,12 @@ If you are considering commercial use of this App please consult the relevant li
 
 ### Using reprozip to minimize container size
 
-This app compresses the FreeSurfer and FSL routines used in the Dockerfile to minimize size. This was carried 
-out using (reprozip)[https://vida-nyu.github.io/reprozip/] inside a docker container. 
+This app compresses the FreeSurfer and FSL routines used in the Dockerfile to minimize size. This was carried
+out using (reprozip)[https://vida-nyu.github.io/reprozip/] inside a docker container.
 
 `reprozip trace --dir /outputs/trace python run.py /bids_dataset /outputs participant --participant_label 01`
 
-This generates a `config.yml` containing all the necessary files used in running the software. The necessary 
+This generates a `config.yml` containing all the necessary files used in running the software. The necessary
 files for running the app is generated using the following snippet of code after running `reprozip trace`.
 
 ```python
@@ -139,5 +139,5 @@ with open('appinfo.json', 'wt') as fp:
   - [ ] Add revised version with Topup processing
   - [ ] Add CIFTI2 output using nibabel
   - [ ] Allow custom ROIs to be processed
-  - [ ] Generate default seed-based connectomes 
+  - [ ] Generate default seed-based connectomes
   - [ ] Generate embedded maps
