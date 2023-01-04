@@ -3,6 +3,8 @@ FROM philcryer/min-jessie
 RUN apt-get update -qq \
     && apt-get install -q -y --no-install-recommends --force-yes \
             curl \
+            ca-certificates  \
+            apt-utils \
             bzip2 \
             libgomp1 \
             libnewmat10ldbl \
