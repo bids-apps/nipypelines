@@ -1,0 +1,86 @@
+---
+version: 2.1
+
+jobs:
+  build:
+    machine:
+      # https://circleci.com/developer/machine/image/ubuntu-2204
+      image: ubuntu-2204:2022.10.2
+    steps:
+    - checkout
+    - restore_cache:
+        keys:
+        - my_cache
+    - run:
+        name: Get test data
+        command: |
+          wget https://raw.githubusercontent.com/bids-apps/maintenance-tools/main/utils/get_data_from_osf.sh
+          bash get_data_from_osf.sh ds114_test1_with_freesurfer
+    - run:
+        name: Build Docker image
+        command: |
+          wget https://raw.githubusercontent.com/bids-apps/maintenance-tools/main/circleci/build_docker.sh
+          bash build_docker.sh
+    - save_cache:
+        key: my_cache
+        paths:
+        - ~/docker
+        - ~/data
+    - persist_to_workspace:
+        root: /home/circleci
+        paths:
+        - data/ds114_test1
+        - docker/image.tar
+
+  test:
+    machine:
+      image: ubuntu-2204:2022.10.2
+    steps:
+    - attach_workspace:
+        at: /tmp/workspace
+    - run:
+        command: |
+          docker load -i /tmp/workspace/docker/image.tar
+    - run:
+        command: |
+          docker run -ti --rm --read-only  \
+            -v /tmp:/tmp  \
+            -v /var/tmp:/var/tmp  \
+            -v /tmp/workspace/data/ds114_test1_with_freesurfer:/bids_dataset  \
+            -v ${HOME}/outputs1:/outputs \
+              bids/${CIRCLE_PROJECT_REPONAME,,}  \
+              /bids_dataset  \
+              /outputs participant \
+              --participant_label 01 -l 0.5
+        no_output_timeout: 6h
+
+  deploy:
+    machine:
+      image: ubuntu-2204:2022.10.2
+    steps:
+    - attach_workspace:
+        at: /tmp/workspace
+    - run: docker load -i /tmp/workspace/docker/image.tar
+    - run:
+        name: push to dockerhub
+        command: |
+          wget https://raw.githubusercontent.com/bids-apps/maintenance-tools/main/circleci/push_docker.sh
+          bash push_docker.sh
+
+workflows:
+  build-test-deploy:
+    jobs:
+    - build
+    - test:
+        requires:
+        - build
+    - deploy:
+        context:
+        - dockerhub
+        requires:
+        - test
+        filters:
+          tags:
+            only: /.*/
+
+# VS Code Extension Version: 1.5.1
