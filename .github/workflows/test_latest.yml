@@ -38,12 +38,12 @@ jobs:
 
     - name: help
       run: |
-        docker run -t --rm --read-only \
+        docker run -t --rm \
             bids/nipypelines --help
 
     - name: run
       run: |
-        docker run -t --rm --read-only \
+        docker run -t --rm \
           -v /tmp:/tmp \
           -v /var/tmp:/var/tmp \
           -v ${HOME}/data/ds114_test1:/bids_dataset \
