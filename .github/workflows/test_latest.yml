@@ -1,0 +1,54 @@
+---
+name: test latest image
+
+on:
+  push:
+    branches: ['*']
+  schedule:
+  - cron: 0 0 1 * *
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  test_dataset_without_session:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y tree
+
+    - name: pull docker image
+      run: docker pull bids/nipypelines
+
+    - name: get data
+      run: |
+        wget https://raw.githubusercontent.com/bids-apps/maintenance-tools/main/utils/get_data_from_osf.sh
+        bash get_data_from_osf.sh ds114_test1_with_freesurfer
+
+    - name: prepare output dir
+      run: |
+        mkdir -p ${HOME}/outputs
+
+    - name: help
+      run: |
+        docker run -t --rm \
+            bids/nipypelines --help
+
+    - name: run
+      run: |
+        docker run -t --rm \
+          -v /tmp:/tmp \
+          -v /var/tmp:/var/tmp \
+          -v ${HOME}/data/ds114_test1:/bids_dataset \
+          -v ${HOME}/outputs:/outputs \
+            bids/nipypelines /bids_dataset /outputs participant --participant_label 01 -l 0.5 
+
+    - name: check output
+      run: tree ${HOME}/outputs
